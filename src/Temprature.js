@@ -1,78 +1,46 @@
-import { observable, computed, action } from "mobx";
+import { observable } from "mobx";
 import { observer } from "mobx-react";
-const ReactDOM = require("react-dom");
-const React = require("react");
+import ReactDOM from "react-dom";
+import React from "react";
 
-class Temperature {
-  @observable unit = "C";
-  @observable temperatureCelsius = 25;
+const t = observable({
+  unit: "C",
+  temperatureCelsius: 25,
+  id: Math.random(),
 
-  @computed get temperatureKelvin() {
+  temperatureKelvin: function () {
     console.log("calculating Kelvin");
     return this.temperatureCelsius + 9 / 5 + 32;
-  }
+  },
 
-  @computed get temperatureFareheit() {
+  temperatureFareheit: function () {
     console.log("calculating Farenheit");
     return this.temperatureCelsius + 273.5;
-  }
+  },
 
-  @computed get temperature() {
-    console.log("t2", this.unit);
+  temperature: function () {
+    console.log("calculating temperature");
     switch (this.unit) {
       case "K":
-        return `${this.temperatureKelvin} °K`;
+        return `${this.temperatureKelvin()} °K`;
       case "F":
-        return `${this.temperatureFareheit} ℉`;
+        return `${this.temperatureFareheit()} ℉`;
       default:
         return `${this.temperatureCelsius} ℃`;
     }
-  }
-  @action setUnit(newUnit) {
-    this.unit = newUnit;
-  }
-}
+  },
+});
 
-export const t = new Temperature();
-// const App2 = observer(({ temperature }) => {
-//   return (
-//     <button
-//       onClick={() => {
-//         console.log("t", temperature.unit);
-//         // temperature.temperatureCelsius = 100;
-//         temperature.unit = temperature.unit === "C" ? "F" : "C";
-//       }}
-//     >
-//       Change
-//     </button>
-//   );
-// });
 const App = observer(({ temperature }) => {
-  //   const [me, setMe] = React.useState(false);
-
   return (
     <>
-      {/* <button onClick={() => setMe(!me)}>update me</button> */}
-      <button
-        onClick={() => {
-          console.log("t", temperature.unit);
-          // temperature.temperatureCelsius = 100;
-          temperature.unit = temperature.unit === "C" ? "F" : "C";
-          //   temperature.setUnit(temperature.unit === "C" ? "F" : "C");
-        }}
-      >
-        Change
-      </button>
+      <button onClick={() => (temperature.unit = "F")}>F</button>
+      <button onClick={() => (temperature.unit = "K")}>K</button>
+      <button onClick={() => (temperature.unit = "C")}>C</button>
       <div>{temperature.unit}</div>
-      <div>{temperature.temperature}</div>
+      <div>{temperature.temperature()}</div>
     </>
   );
 });
 
-ReactDOM.render(
-  <>
-    <App temperature={t} />
-    {/* <App2 temperature={t} /> */}
-  </>,
-  document.getElementById("root")
-);
+ReactDOM.render(<App temperature={t} />, document.getElementById("root"));
