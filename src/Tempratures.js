@@ -1,5 +1,5 @@
 import { observable, computed, action, makeObservable } from "mobx";
-import { observer } from "mobx-react";
+import { inject, observer, Provider } from "mobx-react";
 import ReactDOM from "react-dom";
 import React, { Component } from "react";
 
@@ -9,12 +9,15 @@ class Temperature {
 
     if (location) {
       this.location = location;
+      this.fetch();
     }
   }
+
   @observable unit = "C";
   @observable temperatureCelsius = 25;
   @observable id = Math.random();
   @observable location = "Netherlands, NL";
+  @observable loading = true;
 
   @computed get temperatureKelvin() {
     console.log("calculating Kelvin");
@@ -42,10 +45,26 @@ class Temperature {
   setUnit(newUnit) {
     this.unit = newUnit;
   }
+
+  @action fetch = () => {
+    window
+      .fetch(
+        `http://openweathermap.org/data/2.5/weather?id=524901&appid=${API_KEY}
+    &q=${this.location}`
+      )
+      .then((res) => {
+        return res.json();
+      })
+      .then(
+        action((json) => {
+          this.temperatureCelsius = json.main.temp - 273.15;
+          this.loading = false;
+        })
+      );
+  };
 }
 
-const temp = observable([]);
-
+@inject("temperatures")
 @observer
 class TempratureInput extends Component {
   // constructor() {
@@ -83,6 +102,7 @@ class TempratureInput extends Component {
   };
 }
 
+@inject("temperatures")
 @observer
 class TView extends Component {
   render() {
@@ -90,7 +110,8 @@ class TView extends Component {
 
     return (
       <li onClick={this.temperatureOnClick}>
-        {temperature.location}: {temperature.temperature}
+        {temperature.location}:
+        {temperature.loading ? "Loading..." : temperature.temperature}
       </li>
     );
   }
@@ -101,15 +122,24 @@ class TView extends Component {
   };
 }
 
-const App = observer(({ temperatures }) => {
-  return (
-    <>
-      <TempratureInput temperatures={temperatures} />
-      {temperatures.map((t) => (
-        <TView key={`temp-${t.id}`} temperature={t} />
-      ))}
-    </>
-  );
-});
+const App = inject("temperatures")(
+  observer(({ temperatures }) => {
+    return (
+      <>
+        <TempratureInput />
+        {temperatures.map((t) => (
+          <TView key={`temp-${t.id}`} temperature={t} />
+        ))}
+      </>
+    );
+  })
+);
 
-ReactDOM.render(<App temperatures={temp} />, document.getElementById("root"));
+const tempArr = observable([]);
+
+ReactDOM.render(
+  <Provider temperatures={tempArr}>
+    <App />
+  </Provider>,
+  document.getElementById("root")
+);
